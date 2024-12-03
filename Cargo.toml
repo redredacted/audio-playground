@@ -1,6 +1,8 @@
 [package]
-name = "recieptly"
+name = "audio_playground"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+cpal = "0.15.3"
+rand = "0.8.5"

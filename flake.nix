@@ -31,6 +31,7 @@
             llvmPackages.bintools
             pkg-config
             openssl
+            alsa-lib.dev
           ];  
         };
       }
