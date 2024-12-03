@@ -5,4 +5,8 @@ edition = "2021"
 
 [dependencies]
 cpal = "0.15.3"
+eframe = "0.29.1"
+egui = "0.29.1"
+egui_plot = "0.29.0"
+midir = "0.10.1"
 rand = "0.8.5"
