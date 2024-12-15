@@ -8,11 +8,7 @@ use tracing::{debug, error, info};
 use std::collections::HashMap;
 
 /// Number of steps to use in smoothing the waveform
-const SMOOTHING_STEPS: usize = 4;
-/// Reverb delay in samples
-const REVERB_DELAY: usize = 48000; // 1 second at 48kHz
-/// Reverb decay factor
-const REVERB_DECAY: f32 = 0.5;
+const SMOOTHING_STEPS: usize = 1;
 
 /// Starts the audio synthesizer task
 pub async fn run_audio_synthesizer(state: Arc<AppState>) {
@@ -84,17 +80,12 @@ pub async fn run_audio_synthesizer(state: Arc<AppState>) {
 fn process_audio_data(data: &mut [f32], state: &AppState, sample_rate: f32) {
     let active_notes = state.active_notes.lock().unwrap();
     let mut waveform_buffer = state.waveform_buffer.lock().unwrap();
+    let mut buffer_index = 0;
 
     // Clear waveform buffer
     waveform_buffer.fill(0.0);
 
-    let mut phase_accumulators = std::collections::HashMap::new();
-    let mut smoothing_buffer = vec![0.0; SMOOTHING_STEPS];
-    let mut buffer_index = 0; // Tracks where to write in the waveform buffer
-
-    // Reverb effect buffer
-    let mut reverb_buffer = vec![0.0; REVERB_DELAY];
-    let mut reverb_index = 0;
+    let mut phase_accumulators = state.phase_accumulators.lock().unwrap();
 
     for frame in data.chunks_mut(2) { // Stereo output
         let mut sample_value: f32 = 0.0;
@@ -109,27 +100,16 @@ fn process_audio_data(data: &mut [f32], state: &AppState, sample_rate: f32) {
             // 16-bit era: Use a combination of square and sine waves
             let square_wave = if *phase_accumulator < 0.5 { 1.0 } else { -1.0 };
             let sine_wave = (2.0 * std::f32::consts::PI * *phase_accumulator).sin();
+            let sawtooth_wave = 2.0 * *phase_accumulator - 1.0;
+            let triangle_wave = (2.0 * *phase_accumulator - 1.0).abs() * 2.0 - 1.0;
 
             // Mix square and sine waves for a richer tone
-            let mixed_wave = 0.7 * square_wave + 0.3 * sine_wave;
+            let mixed_wave = 0.3 * sine_wave + 0.3 * square_wave + 0.2 * sawtooth_wave + 0.2 * triangle_wave;
 
             // Apply velocity as volume control (scaled from 0-127 to 0.0-1.0)
             let volume = velocity as f32 / 127.0;
             sample_value += mixed_wave * volume;
         }
-
-        // Apply reverb effect
-        let reverb_sample = reverb_buffer[reverb_index];
-        let wet_sample = sample_value + reverb_sample * REVERB_DECAY;
-        reverb_buffer[reverb_index] = wet_sample;
-        reverb_index = (reverb_index + 1) % REVERB_DELAY;
-
-        sample_value = wet_sample;
-
-        // Smooth the waveform
-        smoothing_buffer.rotate_left(1); // Shift buffer values
-        smoothing_buffer[SMOOTHING_STEPS - 1] = sample_value; // Add the new value
-        sample_value = smoothing_buffer.iter().sum::<f32>() / SMOOTHING_STEPS as f32;
 
         sample_value = sample_value.clamp(-1.0, 1.0); // Prevent clipping
 
