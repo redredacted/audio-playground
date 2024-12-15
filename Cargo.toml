@@ -10,3 +10,6 @@ egui = "0.29.1"
 egui_plot = "0.29.0"
 midir = "0.10.1"
 rand = "0.8.5"
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1.41"
+tracing-subscriber = "0.3.19"
