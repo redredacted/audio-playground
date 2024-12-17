@@ -4,11 +4,7 @@ use cpal::{
     Sample, StreamConfig,
 };
 use crate::state::AppState;
-use tracing::{debug, error, info};
-use std::collections::HashMap;
-
-/// Number of steps to use in smoothing the waveform
-const SMOOTHING_STEPS: usize = 1;
+use tracing::{error, info};
 
 /// Starts the audio synthesizer task
 pub async fn run_audio_synthesizer(state: Arc<AppState>) {
