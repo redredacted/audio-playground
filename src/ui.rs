@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use eframe::{App, CreationContext};
 use egui::{CentralPanel, Context};
-use egui_plot::{Line, Plot, PlotPoints};
+use egui_plot::{Line, Plot, PlotPoints, PlotBounds};
 use crate::state::AppState;
 
 /// A struct representing the application UI.
@@ -20,8 +20,8 @@ impl App for WaveformApp {
     /// The update method is called every frame to update and render the UI.
     fn update(&mut self, ctx: &Context, _: &mut eframe::Frame) {
         // Lock the waveform buffer for reading
-        ctx.request_repaint();
         let buffer = self.state.waveform_buffer.lock().unwrap();
+        ctx.request_repaint();
 
         // Create the UI
         CentralPanel::default().show(ctx, |ui| {
@@ -39,6 +39,10 @@ impl App for WaveformApp {
                     .collect();
 
                 // Plot the waveform
+                plot_ui.set_plot_bounds(PlotBounds::from_min_max(
+                    [0.0, -1.1],
+                    [1024.0, 1.1],
+                ));
                 plot_ui.line(Line::new(PlotPoints::from(points)));
             });
         });
@@ -51,7 +55,7 @@ pub fn run_ui(state: Arc<AppState>) -> Result<(), eframe::Error> {
     eframe::run_native(
         "Waveform Visualizer",
         options,
-        Box::new(|cc: &CreationContext| Ok(Box::new(WaveformApp::new(state.clone())))),
+        Box::new(|_cc: &CreationContext| Ok(Box::new(WaveformApp::new(state.clone())))),
 
     )
 }
